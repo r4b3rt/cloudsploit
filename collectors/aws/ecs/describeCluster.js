@@ -10,7 +10,8 @@ module.exports = function(AWSConfig, collection, retries, callback) {
 
         // Check for the multiple subnets in that single VPC
         var params = {
-            clusters: [cluster]
+            clusters: [cluster],
+            'include': ['SETTINGS']
         };
 
         helpers.makeCustomCollectorCall(ecs, 'describeClusters', params, retries, null, null, null, function(err, data) {
@@ -18,7 +19,7 @@ module.exports = function(AWSConfig, collection, retries, callback) {
                 collection.ecs.describeCluster[AWSConfig.region][cluster].err = err;
             }
 
-            collection.ecs.describeCluster[AWSConfig.region][cluster].data = data;
+            if (data) collection.ecs.describeCluster[AWSConfig.region][cluster].data = data;
 
             cb();
         });

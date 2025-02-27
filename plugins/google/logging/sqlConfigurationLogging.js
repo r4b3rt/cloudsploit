@@ -5,15 +5,17 @@ module.exports = {
     title: 'SQL Configuration Logging',
     category: 'Logging',
     domain: 'Management and Governance',
+    severity: 'Medium',
     description: 'Ensures that logging and log alerts exist for SQL configuration changes',
     more_info: 'Project Ownership is the highest level of privilege on a project, any changes in SQL configurations should be heavily monitored to prevent unauthorized changes.',
     link: 'https://cloud.google.com/logging/docs/logs-based-metrics/',
     recommended_action: 'Ensure that log metric and alert exist for SQL configuration changes.',
-    apis: ['metrics:list', 'alertPolicies:list'],
+    apis: ['metrics:list', 'alertPolicies:list', 'sql:list'],
     compliance: {
         hipaa: 'HIPAA requires the logging of all activity ' +
             'including access and all actions taken.'
     },
+    realtime_triggers: ['logging.MetricsServiceV2.CreateLogMetric', 'logging.MetricsServiceV2.DeleteLogMetric', 'cloudsql.instances.delete','cloudsql.instances.create'],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -21,6 +23,20 @@ module.exports = {
         var regions = helpers.regions();
 
         async.each(regions.alertPolicies, function(region, rcb){
+            let sqlInstances = helpers.addSource(
+                cache, source, ['sql', 'list', region]);
+
+            if (!sqlInstances) return rcb();
+
+            if (sqlInstances.err || !sqlInstances.data) {
+                helpers.addResult(results, 3, 'Unable to query SQL instances: ' + helpers.addError(sqlInstances), region, null, null, sqlInstances.err);
+                return rcb();
+            }
+
+            if (!sqlInstances.data.length) {
+                helpers.addResult(results, 0, 'No SQL instances found', region);
+                return rcb();
+            }
             var metrics = helpers.addSource(cache, source,
                 ['metrics', 'list', region]);
 

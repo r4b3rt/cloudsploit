@@ -26,7 +26,7 @@ const instanceAttachmentStorageConfigs = [
                     "BucketPrefix": "connect/akhtar/Attachments",
                     "EncryptionConfig": {
                         "EncryptionType": "KMS",
-                        "KeyId": "arn:aws:kms:us-east-1:101363889637:key/ad013a33-b01d-4d88-ac97-127399c18b3e"
+                        "KeyId": "arn:aws:kms:us-east-1:000011112222:key/ad013a33-b01d-4d88-ac97-127399c18b3e"
                     }
                 }
             }
@@ -136,7 +136,7 @@ describe('instanceAttachmentsEncrypted', function () {
     describe('run', function () {
         it('should FAIL if Connect instance is not using desired encryption level', function (done) {
             const cache = createCache(listInstances, instanceAttachmentStorageConfigs[0], listKeys, describeKey[1]);
-            instanceAttachmentsEncrypted.run(cache, {}, (err, results) => {
+            instanceAttachmentsEncrypted.run(cache, {connect_attachments_encryption_level : 'awscmk'}, (err, results) => {
                 expect(results.length).to.equal(1);
                 expect(results[0].status).to.equal(2);
                 done();

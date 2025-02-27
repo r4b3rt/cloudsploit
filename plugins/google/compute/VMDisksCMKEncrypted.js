@@ -5,6 +5,7 @@ module.exports = {
     title: 'VM Disks CMK Encryption',
     category: 'Compute',
     domain: 'Compute',
+    severity: 'High',
     description: 'Ensure that Virtual Machine instances are encrypted using customer-managed keys.',
     more_info: 'Google encrypts all disks at rest by default. By using CMKs you can have better control over your disk encryption.',
     link: 'https://cloud.google.com/compute/docs/disks/customer-supplied-encryption',
@@ -19,6 +20,7 @@ module.exports = {
             default: 'cloudcmek'
         },
     },
+    realtime_triggers: ['compute.disks.insert','compute.disks.delete'],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -26,9 +28,7 @@ module.exports = {
         var regions = helpers.regions();
 
         let desiredEncryptionLevelStr = settings.disk_encryption_level || this.settings.disk_encryption_level.default;
-
         var desiredEncryptionLevel = helpers.PROTECTION_LEVELS.indexOf(desiredEncryptionLevelStr);
-
         var keysArr = [];
 
         let projects = helpers.addSource(cache, source,
@@ -57,9 +57,8 @@ module.exports = {
                 async.each(regions.disks, (region, rcb) => {
                     var noDisks = [];
                     var zones = regions.zones;
-                    
+
                     async.each(zones[region], function(zone, zcb) {
-    
                         var disks = helpers.addSource(cache, source,
                             ['disks', 'list', zone]);
 
@@ -76,12 +75,12 @@ module.exports = {
                             return zcb();
                         }
 
-                        var disksFound = false; 
+                        var disksFound = false;
 
                         disks.data.forEach(disk => {
                             if (!disk.id || !disk.selfLink || !disk.creationTimestamp) return;
 
-                            disksFound = true; 
+                            disksFound = true;
 
                             let currentEncryptionLevel;
 
@@ -91,14 +90,15 @@ module.exports = {
                                 currentEncryptionLevel = 1; //default
                             }
 
+                            let currentEncryptionLevelStr = helpers.PROTECTION_LEVELS[currentEncryptionLevel];
                             let resource = helpers.createResourceName('disks', disk.name, project, 'zone', zone);
 
                             if (currentEncryptionLevel < desiredEncryptionLevel) {
                                 helpers.addResult(results, 2,
-                                    'Disk encryption level is less than desired encryption level', region, resource);
+                                    `Disk encryption level ${currentEncryptionLevelStr} is less than desired encryption level ${desiredEncryptionLevelStr}`, region, resource);
                             } else {
                                 helpers.addResult(results, 0,
-                                    'Disk encryption level is greater than or equal to desired encryption level', region, resource);
+                                    `Disk encryption level ${currentEncryptionLevelStr} is greater than or equal to desired encryption level ${desiredEncryptionLevelStr}`, region, resource);
                             }
                         });
 

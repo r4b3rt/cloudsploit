@@ -5,11 +5,12 @@ module.exports = {
     title: 'Storage Permissions Logging',
     category: 'Logging',
     domain: 'Management and Governance',
+    severity: 'Medium',
     description: 'Ensures that logging and log alerts exist for storage permission changes',
     more_info: 'Storage permissions include access to the buckets that store the logs, any changes in storage permissions should be heavily monitored to prevent unauthorized changes.',
     link: 'https://cloud.google.com/logging/docs/logs-based-metrics/',
     recommended_action: 'Ensure that log metric and alert for storage permission changes.',
-    apis: ['metrics:list', 'alertPolicies:list'],
+    apis: ['metrics:list', 'alertPolicies:list', 'buckets:list'],
     compliance: {
         pci: 'PCI requires tracking and monitoring of all access to environments ' +
             'in which cardholder data is present. Storage permissions logging ' +
@@ -18,6 +19,7 @@ module.exports = {
         hipaa: 'HIPAA requires the logging of all activity ' +
             'including access and all actions taken.'
     },
+    realtime_triggers: ['logging.MetricsServiceV2.CreateLogMetric', 'logging.MetricsServiceV2.DeleteLogMetric', 'storage.buckets.create', 'storage.buckets.delete'],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -25,6 +27,21 @@ module.exports = {
         var regions = helpers.regions();
 
         async.each(regions.alertPolicies, function(region, rcb){
+            let buckets = helpers.addSource(
+                cache, source, ['buckets', 'list', region]);
+
+            if (!buckets) return rcb();
+
+            if (buckets.err || !buckets.data) {
+                helpers.addResult(results, 3, 'Unable to query storage buckets: ' + helpers.addError(buckets), region, null, null, buckets.err);
+                return rcb();
+            }
+
+            if (!helpers.hasBuckets(buckets.data)) {
+                helpers.addResult(results, 0, 'No storage buckets found', region);
+                return rcb();
+            }
+            
             var metrics = helpers.addSource(cache, source,
                 ['metrics', 'list', region]);
 

@@ -5,15 +5,17 @@ module.exports = {
     title: 'VPC Firewall Rule Logging',
     category: 'Logging',
     domain: 'Management and Governance',
+    severity: 'Medium',
     description: 'Ensures that logging and log alerts exist for firewall rule changes',
     more_info: 'Project Ownership is the highest level of privilege on a project, any changes in firewall rule should be heavily monitored to prevent unauthorized changes.',
     link: 'https://cloud.google.com/logging/docs/logs-based-metrics/',
     recommended_action: 'Ensure that log metric and alert exist for firewall rule changes.',
-    apis: ['metrics:list', 'alertPolicies:list'],
+    apis: ['metrics:list', 'alertPolicies:list', 'firewalls:list'],
     compliance: {
         hipaa: 'HIPAA requires the logging of all activity ' +
             'including access and all actions taken.'
     },
+    realtime_triggers: ['logging.MetricsServiceV2.CreateLogMetric', 'logging.MetricsServiceV2.DeleteLogMetric', 'compute.firewalls.insert', 'compute.firewalls.delete' ],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -21,6 +23,20 @@ module.exports = {
         var regions = helpers.regions();
 
         async.each(regions.alertPolicies, function(region, rcb){
+            let firewalls = helpers.addSource(
+                cache, source, ['firewalls', 'list', region]);
+
+            if (!firewalls) return rcb();
+
+            if (firewalls.err || !firewalls.data) {
+                helpers.addResult(results, 3, 'Unable to query firewall rules', region, null, null, firewalls.err);
+                return rcb();
+            }
+
+            if (!firewalls.data.length) {
+                helpers.addResult(results, 0, 'No firewall rules found', region);
+                return rcb();
+            }
             var metrics = helpers.addSource(cache, source,
                 ['metrics', 'list', region]);
 
@@ -119,7 +135,3 @@ module.exports = {
         });
     }
 };
-
-
-
-

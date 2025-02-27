@@ -50,7 +50,11 @@ var locations = [
     'brazilsouth',          // (South America) Brazil South
     'brazilsoutheast',      // (South America) Brazil Southeast
     'canadacentral',        // (Canada) Canada Central
-    'canadaeast'            // (Canada) Canada East
+    'canadaeast',           // (Canada) Canada East
+    'qatarcentral',         // (Middle East) Qatar
+    'polandcentral',        // (Europe) Poland Central
+    'italynorth',           // (Europe) Italy North
+    'israelcentral',        // (Middle East) Israel Central
 ];
 
 module.exports = {
@@ -94,11 +98,44 @@ module.exports = {
     redisCaches: locations,
     pricings: ['global'],
     roleDefinitions: ['global'],
+    aad: ['global'],
+    groups: ['global'],
+    servicePrincipals: ['global'],
     autoscaleSettings: locations,
     resourceGroups: locations,
     policyDefinitions: locations,
     diagnosticSettingsOperations: ['global'],
     databaseAccounts: locations,
     securityCenter: ['global'],
-    advisor: ['global']
+    advisor: ['global'],
+    publicIPAddresses: locations,
+    privateDnsZones: ['global'],
+    privateEndpoints: locations,
+    securityContactv2: ['global'],
+    images: locations,
+    vmScaleSet: locations,
+    applicationGateway: locations,
+    wafPolicies: locations,
+    routeTables: locations,
+    bastionHosts: locations,
+    applications: ['global'],
+    eventGrid: locations,
+    eventHub: locations,
+    mediaServices: locations,
+    serviceBus: locations,
+    classicFrontDoors: ['global'],
+    afdWafPolicies: ['global'],
+    appConfigurations: locations,
+    automationAccounts: locations,
+    openAI: locations,
+    logAnalytics: locations,
+    publicIpAddresses: locations,
+    computeGalleries: locations,
+    databricks: locations,
+    containerApps: locations,
+    batchAccounts: locations,
+    machineLearning: locations,
+    apiManagementService: locations,
+    synapse: locations,
+    managedInstances: locations
 };

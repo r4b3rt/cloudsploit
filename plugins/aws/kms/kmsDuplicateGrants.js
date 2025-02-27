@@ -4,18 +4,20 @@ module.exports = {
     title: 'KMS Duplicate Grants',
     category: 'KMS',
     domain: 'Application Integration',
+    severity: 'Medium',
     description: 'Ensure that AWS KMS keys does not have duplicate grants to adhere to AWS security best practices.',
     more_info: 'Duplicate grants have the same key ARN, API actions, grantee principal, encryption context, and name. ' +
         'If you retire or revoke the original grant but leave the duplicates, the leftover duplicate grants constitute unintended escalations of privilege.',
     recommended_action: 'Delete duplicate grants for AWS KMS keys',
     link: 'https://docs.aws.amazon.com/kms/latest/developerguide/grants.html',
     apis: ['KMS:listKeys', 'KMS:listGrants', 'KMS:describeKey'],
+    realtime_triggers: ['kms:CreateKey','kms:RevokeGrant','kms:CreateGrant'],
 
     run: function(cache, settings, callback) {
         var results = [];
         var source = {};
         var regions = helpers.regions(settings);
-
+       
         async.each(regions.kms, function(region, rcb){
             var listKeys = helpers.addSource(cache, source,
                 ['kms', 'listKeys', region]);
@@ -75,8 +77,8 @@ module.exports = {
                     let dupGrant = listGrants.data.Grants.filter(grant => grant.KeyId === entry.KeyId &&
                         grant.Name === entry.Name &&
                         grant.GranteePrincipal == entry.GranteePrincipal &&
-                        (grant.Operations && entry.Operations) ? JSON.stringify(grant.Operations) == JSON.stringify(entry.Operations) : true &&
-                        (grant.Constraints && entry.Constraints) ? JSON.stringify(grant.Constraints) == JSON.stringify(entry.Constraints) : true);
+                        ((grant.Operations && entry.Operations) ? JSON.stringify(grant.Operations) == JSON.stringify(entry.Operations) : true) &&
+                        ((grant.Constraints && entry.Constraints) ? JSON.stringify(grant.Constraints) == JSON.stringify(entry.Constraints) : true));
                     if (dupGrant && dupGrant.length > 1) found = true;
                 }
                 

@@ -5,11 +5,13 @@ module.exports = {
     title: 'Key Vault In Use',
     category: 'Key Vaults',
     domain: 'Application Integration',
+    severity: 'Low',
     description: 'Ensures that Key Vaults are being used to store secrets.',
     more_info: 'App secrets control access to the application and thus need to be secured externally to the app configuration, storing the secrets externally and referencing them in the configuration also enables key rotation without having to redeploy the app service.',
     recommended_action: 'Ensure that Azure Key Vaults are being used to store secrets.',
-    link: 'https://docs.microsoft.com/en-us/azure/app-service/app-service-key-vault-references',
-    apis: ['vaults:list', 'vaults:getKeys'],
+    link: 'https://learn.microsoft.com/en-us/azure/app-service/app-service-key-vault-references',
+    apis: ['vaults:list', 'vaults:getKeys', 'vaults:getSecrets'],
+    realtime_triggers: ['microsoftkeyvault:vaults:write', 'microsoftkeyvault:vaults:delete'],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -39,19 +41,18 @@ module.exports = {
 
                 var secrets = helpers.addSource(cache, source,
                     ['vaults', 'getSecrets', location, vault.id]);
-
-                if (!keys || keys.err || !keys.data) {
-                    helpers.addResult(results, 3, 'Unable to query for Key Vault keys: ' + helpers.addError(keys), location, vault.id);
-                } else if (keys.data.length) {
+                
+                if ((keys && keys.data && keys.data.length) || (secrets && secrets.data && secrets.data.length)) {
                     keyVaultsBeingUsed = true;
                     break;
                 }
 
+                if (!keys || keys.err || !keys.data) {
+                    helpers.addResult(results, 3, 'Unable to query for Key Vault keys: ' + helpers.addError(keys), location, vault.id);
+                }
+
                 if (!secrets || secrets.err || !secrets.data) {
                     helpers.addResult(results, 3, 'Unable to query for Key Vault secrets: ' + helpers.addError(secrets), location, vault.id);
-                } else if (secrets.data.length) {
-                    keyVaultsBeingUsed = true;
-                    break;
                 }
             }
 

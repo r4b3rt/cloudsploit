@@ -5,15 +5,17 @@ module.exports = {
     title: 'VPC Network Route Logging',
     category: 'Logging',
     domain: 'Management and Governance',
+    severity: 'Medium',
     description: 'Ensures that logging and log alerts exist for VPC network route changes',
     more_info: 'Project Ownership is the highest level of privilege on a project, any changes in VPC network route should be heavily monitored to prevent unauthorized changes.',
     link: 'https://cloud.google.com/logging/docs/logs-based-metrics/',
     recommended_action: 'Ensure that log metric and alert exist for VPC network route changes.',
-    apis: ['metrics:list', 'alertPolicies:list'],
+    apis: ['metrics:list', 'alertPolicies:list', 'networkRoutes:list'],
     compliance: {
         hipaa: 'HIPAA requires the logging of all activity ' +
             'including access and all actions taken.'
     },
+    realtime_triggers: ['logging.MetricsServiceV2.CreateLogMetric', 'logging.MetricsServiceV2.DeleteLogMetric', 'compute.routes.insert', 'compute.routes.delete' ],
 
     run: function(cache, settings, callback) {
         var results = [];
@@ -21,6 +23,21 @@ module.exports = {
         var regions = helpers.regions();
 
         async.each(regions.alertPolicies, function(region, rcb){
+            let routes = helpers.addSource(
+                cache, source, ['networkRoutes', 'list', region]);
+
+            if (!routes) return rcb();
+
+            if (routes.err || !routes.data) {
+                helpers.addResult(results, 3, 'Unable to query VPC network routes', region, null, null, routes.err);
+                return rcb();
+            }
+
+            if (!routes.data.length) {
+                helpers.addResult(results, 0, 'No VPC network routes found', region);
+                return rcb();
+            }
+
             var metrics = helpers.addSource(cache, source,
                 ['metrics', 'list', region]);
 
@@ -120,7 +137,3 @@ module.exports = {
         });
     }
 };
-
-
-
-
